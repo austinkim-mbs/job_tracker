@@ -49,9 +49,26 @@ Ask the user if they want to scope this run:
 - `--tier 1` (or 2/3) to refresh just one priority tier
 - `--platform ashby` (etc.) to refresh just one ATS
 
-This runs one fetch subprocess per ATS platform in parallel (read-only
-against each platform's public API) followed by a single serial DB write
-pass — safe to re-run any time, it's an upsert.
+**This is a two-phase pipeline by design — don't "simplify" it into one
+loop:**
+1. **Fetch, in parallel:** one subprocess per ATS platform (`dump_postings`),
+   all launched at once and awaited together. Each subprocess only hits its
+   own platform's public API and writes to its own dump file — zero DB
+   writes — so running every platform concurrently is safe; they can't
+   contend with each other.
+2. **Ingest, sequentially:** once every fetch subprocess has finished, a
+   single `ingest_postings` pass reads all the dump files and writes to the
+   DB one at a time, in one process.
+
+The split exists because SQLite only tolerates one writer at a time — an
+earlier version wrote directly to the DB from each per-platform process and
+hit recurring "database is locked" crashes on the heaviest platforms
+(ashby/greenhouse) whenever they ran concurrently. Never route platform
+fetches through separate concurrent DB writes; always fetch-parallel /
+ingest-serial through this command (or `dump_postings` +
+`ingest_postings` directly, scoped the same way) instead.
+
+Safe to re-run any time — the ingest is an upsert.
 
 ## 3. Score against the resume
 
