@@ -1,0 +1,12 @@
+anthropic
+google-auth
+google-auth-oauthlib
+google-api-python-client
+pdfplumber
+apscheduler
+sqlalchemy
+python-dotenv
+pywin32
+requests
+django
+playwright

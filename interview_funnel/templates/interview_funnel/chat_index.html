@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Resume Fit Chat</title>
+<style>
+  body { font-family: system-ui, -apple-system, "Segoe UI", sans-serif; max-width: 640px; margin: 48px auto; padding: 0 20px; color: #0b0b0b; }
+  h1 { font-size: 20px; margin-bottom: 4px; }
+  p.sub { color: #52514e; font-size: 14px; margin-top: 0; }
+  ul { list-style: none; padding: 0; }
+  li { border-bottom: 1px solid #e1e0d9; padding: 10px 0; }
+  a { color: #2a78d6; text-decoration: none; font-size: 14px; }
+  a:hover { text-decoration: underline; }
+  .company { color: #898781; font-size: 12.5px; }
+</style>
+</head>
+<body>
+  <h1>Resume Fit Chat</h1>
+  <p class="sub">Pick a posting to talk through fit for -- most recent 20 software engineer postings.</p>
+  <ul>
+    {% for p in postings %}
+    <li>
+      <a href="{% url 'interview_funnel:chat' p.id %}">{{ p.title }}</a>
+      <div class="company">{{ p.company.name }} &middot; {{ p.location }}</div>
+    </li>
+    {% empty %}
+    <li>No postings found.</li>
+    {% endfor %}
+  </ul>
+</body>
+</html>

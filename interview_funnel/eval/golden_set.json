@@ -1,0 +1,22 @@
+[
+  {
+    "company": "Office Hours",
+    "title": "Software Engineer, Full Stack",
+    "location": "San Francisco, NYC",
+    "human_score": 70,
+    "human_seniority_fit": "strong",
+    "human_matched_skills": ["React", "TypeScript", "Docker", "AWS", "REST APIs", "CI/CD", "full-stack ownership"],
+    "human_missing_skills": ["Node.js in production", "MongoDB", "Postgres", "OpenSearch", "Temporal", "Next.js", "Tailwind/shadcn", "Kubernetes"],
+    "human_notes": "Strong full-stack generalist match and seniority fit (3+ YOE ask vs ~4.75 YOE candidate); main gap is backend language -- candidate's hands-on backend is Python/Django, role's is Node.js/TypeScript."
+  },
+  {
+    "company": "Hilberts",
+    "title": "Software Engineer (Full-Stack / Product)",
+    "location": "San Francisco",
+    "human_score": 57,
+    "human_seniority_fit": "moderate",
+    "human_matched_skills": ["React", "TypeScript", "systems/architecture thinking", "internal tooling for monitoring ML systems"],
+    "human_missing_skills": ["Node.js/Express", "MongoDB", "Kubernetes", "Nx/monorepo", "LLM/agentic UX", "enterprise auth (SAML/OAuth)", "ClickHouse", "SOC2"],
+    "human_notes": "Nice parallel between candidate's observability-dashboard work and this role's 'Mission Control for ML teams' ask, but the role leans harder into AI-agent UX and systems-architect ownership than the resume shows."
+  }
+]

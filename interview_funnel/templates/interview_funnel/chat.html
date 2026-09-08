@@ -1,0 +1,128 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{{ posting.title }} @ {{ posting.company.name }} -- Resume Fit Chat</title>
+<style>
+  :root { color-scheme: light; }
+  body { font-family: system-ui, -apple-system, "Segoe UI", sans-serif; max-width: 720px; margin: 32px auto; padding: 0 20px; color: #0b0b0b; }
+  header { margin-bottom: 16px; }
+  header a.back { font-size: 13px; color: #898781; text-decoration: none; }
+  h1 { font-size: 18px; margin: 6px 0 2px; }
+  .sub { color: #52514e; font-size: 13.5px; margin: 0 0 16px; }
+  #log { border: 1px solid #e1e0d9; border-radius: 12px; padding: 16px; min-height: 320px; max-height: 60vh; overflow-y: auto; margin-bottom: 12px; background: #fcfcfb; }
+  .msg { margin-bottom: 14px; white-space: pre-wrap; line-height: 1.5; font-size: 14.5px; }
+  .msg .role { font-size: 11px; text-transform: uppercase; letter-spacing: .04em; color: #898781; margin-bottom: 3px; }
+  .msg.user .role { color: #2a78d6; }
+  .msg.assistant .role { color: #eb6834; }
+  .msg.error .role, .msg.error .body { color: #d03b3b; }
+  form { display: flex; gap: 8px; }
+  textarea { flex: 1; resize: vertical; min-height: 44px; font-family: inherit; font-size: 14px; padding: 10px 12px; border-radius: 10px; border: 1px solid #c3c2b7; }
+  button { padding: 0 18px; border-radius: 10px; border: none; background: #2a78d6; color: white; font-size: 14px; cursor: pointer; }
+  button:disabled { background: #c3c2b7; cursor: default; }
+</style>
+</head>
+<body>
+<header>
+  <a class="back" href="{% url 'interview_funnel:chat_index' %}">&larr; all postings</a>
+  <h1>{{ posting.title }}</h1>
+  <p class="sub">{{ posting.company.name }} &middot; {{ posting.location }}</p>
+</header>
+
+{% csrf_token %}
+<div id="log"></div>
+<form id="form">
+  <textarea id="input" placeholder="Ask about fit for this role..." autofocus></textarea>
+  <button id="send" type="submit">Send</button>
+</form>
+
+<script>
+const STREAM_URL = "{% url 'interview_funnel:chat_stream' posting.id %}";
+const csrftoken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+
+const log = document.getElementById('log');
+const form = document.getElementById('form');
+const input = document.getElementById('input');
+const sendBtn = document.getElementById('send');
+let history = [];
+
+function appendMessage(role, text) {
+  const wrap = document.createElement('div');
+  wrap.className = 'msg ' + role;
+  const roleEl = document.createElement('div');
+  roleEl.className = 'role';
+  roleEl.textContent = role;
+  const bodyEl = document.createElement('div');
+  bodyEl.className = 'body';
+  bodyEl.textContent = text;
+  wrap.appendChild(roleEl);
+  wrap.appendChild(bodyEl);
+  log.appendChild(wrap);
+  log.scrollTop = log.scrollHeight;
+  return bodyEl;
+}
+
+form.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const text = input.value.trim();
+  if (!text) return;
+  input.value = '';
+  sendBtn.disabled = true;
+
+  history.push({ role: 'user', content: text });
+  appendMessage('user', text);
+  const assistantBody = appendMessage('assistant', '');
+
+  try {
+    const resp = await fetch(STREAM_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrftoken },
+      body: JSON.stringify({ messages: history }),
+    });
+    if (!resp.ok || !resp.body) {
+      assistantBody.parentElement.className = 'msg error';
+      assistantBody.textContent = `Request failed (HTTP ${resp.status}).`;
+      return;
+    }
+
+    const reader = resp.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = '';
+    let assistantText = '';
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, { stream: true });
+
+      let idx;
+      while ((idx = buffer.indexOf('\n\n')) >= 0) {
+        const chunk = buffer.slice(0, idx);
+        buffer = buffer.slice(idx + 2);
+        if (!chunk.startsWith('data: ')) continue;
+        const dataStr = chunk.slice(6);
+        if (dataStr === '[DONE]') continue;
+
+        const data = JSON.parse(dataStr);
+        if (data.error) {
+          assistantBody.parentElement.className = 'msg error';
+          assistantBody.textContent = 'Error: ' + data.error;
+          return;
+        }
+        assistantText += data.delta;
+        assistantBody.textContent = assistantText;
+        log.scrollTop = log.scrollHeight;
+      }
+    }
+    history.push({ role: 'assistant', content: assistantText });
+  } catch (err) {
+    assistantBody.parentElement.className = 'msg error';
+    assistantBody.textContent = 'Error: ' + err.message;
+  } finally {
+    sendBtn.disabled = false;
+  }
+});
+</script>
+</body>
+</html>
