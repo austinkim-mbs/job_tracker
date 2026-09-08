@@ -49,17 +49,18 @@ If yes:
    - Create an OAuth client ID, type "Desktop app"
    - Download the JSON, save it as `credentials/google_oauth.json` in this
      repo (already gitignored — `credentials/*.json`)
-2. Ask for their target Google Sheet ID (the long id in the sheet's URL) and
-   write it to `SHEET_ID` in `.env`.
-3. Explain that the *first* run of `python main.py` (or anything that
-   constructs `GmailPoller`) will open a browser window for them to sign in
-   and consent — that's what mints `credentials/token.json`. You cannot
-   trigger or complete that browser flow yourself; tell them to run it
-   themselves after this setup finishes.
+2. Explain that the *first* run of `python poll_applications.py --once` (or
+   anything that constructs `GmailPoller`) will open a browser window for
+   them to sign in and consent — that's what mints
+   `credentials/token.json`. You cannot trigger or complete that browser
+   flow yourself; tell them to run it themselves after this setup finishes.
 
-If skipped, leave `SHEET_ID` alone and note that `main.py` (Gmail polling +
-Sheets sync) won't work until this is done later, but the crawler/scoring
-scripts (job discovery, `score_bay_area_postings.py`, etc.) don't need it.
+Note: this repo only reads Gmail (`gmail.readonly` scope) — there's no
+Sheets sync anymore, everything lands in the local `job_tracker.db`.
+
+If skipped, note that `poll_applications.py` (Gmail polling) won't work
+until this is done later, but the crawler/scoring scripts (job discovery,
+`score_bay_area_postings.py`, etc.) don't need it.
 
 Also confirm `ANTHROPIC_API_KEY` is set in `.env` if they want Claude-based
 email classification (`email_classifier.py`) or resume ATS scoring

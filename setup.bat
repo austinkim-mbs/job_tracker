@@ -26,7 +26,7 @@ if not exist .env (
     copy .env.example .env
     echo.
     echo Created .env from template.
-    echo IMPORTANT: Edit .env and fill in your ANTHROPIC_API_KEY and SHEET_ID before running.
+    echo IMPORTANT: Edit .env and fill in your ANTHROPIC_API_KEY before running.
     echo.
 ) else (
     echo .env already exists, skipping.
@@ -42,7 +42,7 @@ echo.
 echo Next steps:
 echo   1. Edit .env with your API keys
 echo   2. Add credentials\google_oauth.json from Google Cloud Console
-echo   3. Run: python main.py          (foreground / test)
+echo   3. Run: python poll_applications.py --once   (foreground / test)
 echo   4. Run: python service.py install  then  python service.py start  (background service)
 echo.
 pause

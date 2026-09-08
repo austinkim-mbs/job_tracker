@@ -16,8 +16,8 @@ Arguments passed: `$ARGUMENTS`
 This is the interactive, single-posting scorer — distinct from two other
 scorers in this repo, don't confuse them:
 - `resume_scorer.py` — simpler JSON-only score, called automatically by the
-  Gmail-polling pipeline (`main.py`/`poll_applications.py`) via the
-  Anthropic API, not meant for ad-hoc use.
+  Gmail-polling pipeline (`poll_applications.py`) via the Anthropic API,
+  not meant for ad-hoc use.
 - `score_bay_area_postings.py` / `score_biotech_postings.py` — deterministic
   regex/keyword scorers over the whole `Posting` table for bulk CSV export
   (see the `pull-new-jobs` skill).

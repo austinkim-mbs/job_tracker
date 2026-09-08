@@ -98,6 +98,6 @@ CSV themselves.
 
 Do not try to interpret "preferred" as requiring `ANTHROPIC_API_KEY` — this
 whole path is Claude-free. The Claude-based ATS scoring
-(`resume_scorer.py`) only runs inside `main.py`'s Gmail-polling loop, for
-applications that have actually replied — different pipeline, not part of
-this skill.
+(`resume_scorer.py`) only runs inside `poll_applications.py`'s
+Gmail-polling loop, for applications that have actually replied —
+different pipeline, not part of this skill.

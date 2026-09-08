@@ -37,7 +37,7 @@ if HAS_WIN32:
         _svc_name_ = "JobTrackerService"
         _svc_display_name_ = "Job Application Tracker"
         _svc_description_ = (
-            "Polls Gmail for job application emails and updates Google Sheets."
+            "Polls Gmail for job application emails and updates the local tracker DB."
         )
 
         def __init__(self, args):
@@ -62,14 +62,23 @@ if HAS_WIN32:
             win32event.WaitForSingleObject(self.stop_event, win32event.INFINITE)
 
         def _run(self):
-            from main import main
-            main()
+            _run_poll_applications()
+
+
+def _run_poll_applications():
+    """poll_applications.main() parses sys.argv itself (--once/--rps/
+    --interval) -- called this way, sys.argv still holds whatever
+    service.py itself was invoked with ("install", "debug", ...), which
+    argparse would choke on. Clear it to just the program name first so
+    main() gets its defaults instead of trying to parse our own CLI args."""
+    sys.argv = sys.argv[:1]
+    from poll_applications import main
+    main()
 
 
 def run_debug():
     """Run the tracker in the foreground for testing (no Windows service needed)."""
-    from main import main
-    main()
+    _run_poll_applications()
 
 
 if __name__ == "__main__":

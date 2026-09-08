@@ -14,10 +14,6 @@ DB_PATH = os.path.join(BASE_DIR, "job_tracker.db")
 CREDENTIALS_PATH = os.path.join(BASE_DIR, "credentials", "google_oauth.json")
 TOKEN_PATH = os.path.join(BASE_DIR, "credentials", "token.json")
 
-# Google
-SHEET_ID = os.environ.get("SHEET_ID", "")
-SHEET_NAME = "Applications"
-
 # Anthropic
 ANTHROPIC_API_KEY = os.environ.get("ANTHROPIC_API_KEY", "")
 
@@ -50,28 +46,4 @@ ATS_PLATFORMS = {
     "icims.com": "iCIMS",
     "jobvite.com": "Jobvite",
     "smartrecruiters.com": "SmartRecruiters",
-}
-
-# Sheet column indices (0-based internally, 1-based for Sheets API)
-COL_COMPANY = 0
-COL_JOB_TITLE = 1
-COL_LOCATION = 2
-COL_STATUS = 3
-COL_COMP = 4
-COL_ATS_SCORE = 5
-COL_DATE_APPLIED = 6
-COL_DATE_UPDATED = 7
-COL_PLATFORM = 8
-COL_NOTES = 9
-TOTAL_COLS = 10
-
-# Status colors (RGB 0-1 floats for Sheets API)
-STATUS_COLORS = {
-    "Applied":      {"red": 0.733, "green": 0.871, "blue": 0.984},  # #BBDEFB light blue
-    "Screening":    {"red": 1.0,   "green": 0.976, "blue": 0.769},  # #FFF9C4 yellow
-    "Interviewing": {"red": 1.0,   "green": 0.878, "blue": 0.706},  # #FFE0B2 orange
-    "Offer":        {"red": 0.784, "green": 0.902, "blue": 0.788},  # #C8E6C9 green
-    "Accepted":     {"red": 0.220, "green": 0.557, "blue": 0.235},  # #388E3C dark green
-    "Rejected":     {"red": 1.0,   "green": 0.804, "blue": 0.820},  # #FFCDD2 red
-    "Ghosted":      {"red": 0.933, "green": 0.933, "blue": 0.933},  # #EEEEEE gray
 }

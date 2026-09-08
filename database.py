@@ -19,7 +19,6 @@ class Application(Base):
     platform = Column(String)
     date_applied = Column(DateTime)
     date_updated = Column(DateTime)
-    sheet_row = Column(Integer)   # 1-based row index in the sheet
     notes = Column(Text)
 
 
