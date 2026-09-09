@@ -36,5 +36,6 @@ the pipeline below. Run these from Claude Code inside this directory:
 Some notable concerns
 - This is written mainly for windows, so some of the jobs are unfortunately not "production ready"
 - I used sqllite for ease, but obviously it can end up being quite sizeable.
+- In addition, the app can generate a job dashboard HTML file. As the parser has become more proficient, the HTML has grown quite sizeable - could be worth adding more restricted time filters.
 - Added gmail integration at some point to track applications, but claude is pretty bad at sentiment analysis. It still works decently well, but needs a human in the loop every now and then.
-- The ats scorer is very ok - I find using something like perplexity is significantly better at scoring and generating resumes.
+- The ats scorer is ok - I find using something like perplexity is significantly better at scoring and generating resumes. At this point I don't see a large payoff in prompt optimization since its crazy expensive to have claude analyze job descriptions anyway.
