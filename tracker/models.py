@@ -1,4 +1,5 @@
 import hashlib
+import re
 from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
 
 from django.db import models
@@ -28,7 +29,21 @@ def canonicalize_url(url: str) -> str:
         if k.lower() not in TRACKING_PARAMS
     )
     query = urlencode(kept)
-    return urlunsplit((parts.scheme.lower(), parts.netloc.lower(), path, query, ""))
+    # Lowercased in full (2026-11-09): on 2026-11-06 Ashby's API started
+    # returning board names in their original case (jobs.ashbyhq.com/1st%20Formations/...
+    # instead of .../1st%20formations/...), which re-keyed ~8.5k live postings as
+    # brand-new duplicates. ATS slugs/paths aren't case-significant, so the hash
+    # input ignores case entirely. Only the hash input -- Posting.url keeps the
+    # ATS's original casing for display/links.
+    return urlunsplit((parts.scheme, parts.netloc, path, query, "")).lower()
+
+
+def posting_hash(company, url: str) -> str:
+    """Posting.id for a (company, url) pair. Single source of truth for both
+    upsert paths and the dedupe_postings re-key command -- case-insensitive
+    in both the company slug and the URL (see canonicalize_url)."""
+    raw = f"{company.ats_platform}:{company.slug}:{canonicalize_url(url)}".lower()
+    return hashlib.sha256(raw.encode()).hexdigest()
 
 
 class Company(models.Model):
@@ -117,9 +132,7 @@ class PostingManager(models.Manager):
         the posting's locations m2m is set to match. Passing None leaves the
         existing m2m links untouched, since not every ATS fetcher has
         structured location data to offer."""
-        canonical = canonicalize_url(url)
-        raw = f"{company.ats_platform}:{company.slug}:{canonical}"
-        posting_id = hashlib.sha256(raw.encode()).hexdigest()
+        posting_id = posting_hash(company, url)
         obj, _ = self.update_or_create(
             id=posting_id,
             defaults={
@@ -248,9 +261,7 @@ class PostingManager(models.Manager):
         instances = []
         ids = []
         for row in rows:
-            canonical = canonicalize_url(row["url"])
-            raw = f"{row['company'].ats_platform}:{row['company'].slug}:{canonical}"
-            posting_id = hashlib.sha256(raw.encode()).hexdigest()
+            posting_id = posting_hash(row["company"], row["url"])
             ids.append(posting_id)
             instances.append(Posting(
                 id=posting_id, company=row["company"], title=row["title"],
@@ -329,11 +340,32 @@ class Posting(models.Model):
         ("other", "Other/Non-Engineering"),
     ]
     role_type = models.CharField(max_length=20, blank=True, default="", choices=ROLE_TYPE_CHOICES)
+    # When the user marked this posting as reviewed on the SWE market dashboard
+    # (row checkmark, or bulk on expanding a company). Null = not seen. Written
+    # via queryset .update() so it never bumps last_seen's auto_now.
+    # Indexed: the dashboard fetches all seen ids on every load, and without the
+    # index that's a full scan of a multi-GB table (descriptions are inline).
+    seen_at = models.DateTimeField(null=True, blank=True, default=None, db_index=True)
 
     objects = PostingManager()
 
     def __str__(self):
         return f"{self.title} @ {self.company.name}"
+
+    @property
+    def public_url(self) -> str:
+        """The link to show a human -- usually just `url`, but some companies
+        list on an ATS board whose per-job pages don't work for candidates.
+        `url` itself must stay the ATS link: it's what Posting.id hashes, so
+        rewriting it would re-key (and duplicate) every posting."""
+        if self.company.ats_platform == "ashby" and self.company.slug == "openai":
+            # OpenAI's Ashby job pages no longer work; their own careers site
+            # keys each job by slugified "title location", e.g. "Applied AI
+            # Engineer, Startups" / "Tokyo, Japan" ->
+            # openai.com/careers/applied-ai-engineer-startups-tokyo-japan/
+            slug = re.sub(r"[^a-z0-9]+", "-", f"{self.title} {self.location}".lower()).strip("-")
+            return f"https://openai.com/careers/{slug}/"
+        return self.url
 
 
 class ApplicationManager(models.Manager):
@@ -371,6 +403,10 @@ class Application(models.Model):
     lowest_comp = models.PositiveIntegerField(null=True, blank=True)
     ats_score = models.IntegerField(null=True, blank=True)
     notes = models.TextField(blank=True)
+    # Which resume was submitted -- optional; defaults to the main one.
+    resume = models.CharField(max_length=255, blank=True, default="fullstack_product")
+    # Whether that resume was tailored/optimized for this posting. Null = not recorded.
+    optimized = models.BooleanField(null=True, blank=True, default=None)
     date_updated = models.DateTimeField(auto_now=True)
 
     objects = ApplicationManager()
