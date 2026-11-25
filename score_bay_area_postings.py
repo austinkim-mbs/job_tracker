@@ -1,7 +1,9 @@
 """
-One-off export: score Bay Area SWE/Fullstack postings (last 3 months) against
-Austin Kim's resume, ATS-style. Deterministic keyword/seniority scoring --
-no LLM calls, so it's fast and free to re-run.
+Stage 1 gatekeeper: score Bay Area + remote-US SWE/Fullstack postings (last
+3 months) against Austin Kim's resume. Deterministic keyword/seniority
+scoring -- no LLM calls, so it's fast and free to re-run. Postings marked
+stage1_pass=yes are the ones `manage.py score_postings` (Stage 2,
+resume_scorer.py) spends API calls on.
 
 Candidate profile (from Resume v12.pdf):
   ~4.75 YOE combined (Workiva Aug'19-Feb'20, Mammoth Biosciences Feb'21-May'25)
@@ -16,6 +18,7 @@ Run: python score_bay_area_postings.py
 """
 
 import csv
+import html
 import os
 import re
 from datetime import datetime, timedelta, timezone
@@ -95,7 +98,8 @@ DISQUALIFY_RE = re.compile(
     r"\bqa\b|quality assurance|\bsdet\b|in test\b|devops|site reliability|\bsre\b|"
     r"machine learning|\bml\b|data engineer|security engineer|network engineer|"
     r"hardware engineer|firmware engineer|sales engineer|solutions engineer|"
-    r"support engineer|field engineer|release engineer|systems engineer|test engineer",
+    r"support engineer|field engineer|release engineer|systems engineer|test engineer|"
+    r"\bintern(ship)?\b",
     re.IGNORECASE,
 )
 
@@ -128,39 +132,83 @@ def build_bay_area_loc_q() -> Q:
         q |= Q(location__iregex=city) | Q(locations__city__iregex=city)
     return q
 
+# Stage-1 gatekeeper. This script is the free, deterministic first pass: it
+# decides which postings are worth a paid Stage-2 read (resume_scorer.py,
+# `manage.py score_postings`), it does not try to be the fit score itself.
+# So the keyword categories below only ADD points -- a JD that names a
+# different-but-transferable web framework (Rails, FastAPI, Next.js, Vue...)
+# or no framework at all is not penalized, only a dominant non-transferable
+# primary language is (STACK_MISMATCH_SIGNALS).
 CATEGORY_KEYWORDS = {
-    "languages": [r"\bpython\b", r"\btypescript\b", r"\bjava\b(?!script)", r"\bmysql\b", r"\bsql\b"],
+    "languages": [r"\bpython\b", r"\btypescript\b", r"\bjavascript\b", r"\bjava\b(?!script)",
+                  r"\bmysql\b", r"\bsql\b", r"\bpostgres(ql)?\b"],
+    # Transferable full-stack rule: React <-> Next.js/Vue/Angular/Svelte.
     "frontend": [r"\breact\b", r"\bredux\b", r"\bd3(\.js)?\b", r"\bhtml5?\b", r"\bcss3?\b",
-                 r"\bmaterial.?ui\b", r"\btypescript\b", r"\bjavascript\b"],
-    "backend": [r"\bdjango\b", r"\bnode\.?js\b", r"\brest(ful)?\s*api", r"\bgraphql\b",
-                r"api design", r"data model"],
+                 r"\bmaterial.?ui\b", r"\bnext\.?js\b", r"\bvue(\.js)?\b", r"\bangular\b",
+                 r"\bsvelte\b", r"\bfront[- ]?end\b"],
+    # Transferable full-stack rule: Python/Django <-> Node/TS/Rails/FastAPI/Flask/Express/Spring.
+    "backend": [r"\bdjango\b", r"\bnode\.?js\b", r"\brest(ful)?\b", r"\bgraphql\b",
+                r"\bapis?\b", r"api design", r"data model", r"\bfastapi\b", r"\bflask\b",
+                r"\brails\b", r"\bexpress(\.js)?\b", r"\bnest\.?js\b", r"\bspring\b",
+                r"\bmicroservices?\b", r"\bback[- ]?end\b"],
     "infra": [r"\bdocker\b", r"\bci\s?/\s?cd\b", r"\bterraform\b", r"\baws\b",
-              r"\bgithub actions\b", r"\bcloud\b"],
+              r"\bgithub actions\b", r"\bcloud\b", r"\bgcp\b"],
     "data": [r"\bpandas\b", r"\bnumpy\b", r"\bjupyter\b", r"\betl\b", r"data pipeline"],
 }
+CATEGORY_POINTS = {"languages": 15, "frontend": 10, "backend": 10, "infra": 5, "data": 5}
+BASE_SCORE = 40
 
-# Core language/framework signals for a DIFFERENT primary stack than the
-# resume's -- if the description leans heavily on one of these, it's a real
-# stack mismatch, not just a missing nice-to-have.
+# A primary language the resume doesn't have and that isn't a transferable
+# web-framework swap. Ruby/Rails, Vue and Angular used to be here; under the
+# transferable full-stack rules they're credited above instead.
+#
+# "Go" is matched case-sensitively: lowercase "go" is an English verb
+# ("you want to go deep with React" -- the Quantifind false positive) and
+# "GO" shows up in headings/acronyms. Golang is unambiguous in any case.
 STACK_MISMATCH_SIGNALS = [
-    ("Go/Golang", r"\bgo(lang)?\b"),
-    ("Ruby/Rails", r"\bruby\b|\brails\b"),
+    ("Go/Golang", r"(?-i:\bGo\b)|\bgolang\b"),
     ("PHP", r"\bphp\b"),
     ("C++", r"c\+\+"),
     ("C#/.NET", r"c#|\.net\b"),
     ("Rust", r"\brust\b"),
-    ("Angular", r"\bangular\b"),
-    ("Vue", r"\bvue(\.js)?\b"),
 ]
+
+# A mismatch language listed as one option among languages the resume DOES
+# have ("a compiled language (C++, Java, etc)", "Java, Go or Python") is an
+# alternatives list, not a primary-stack requirement -- the Everlaw false
+# positives. Each mention is checked against a window of text around it.
+RESUME_LANGUAGE_RE = re.compile(r"\bpython\b|\btypescript\b|\bjavascript\b|\bjava\b(?!script)", re.IGNORECASE)
+ALTERNATIVES_WINDOW = 60
+
+# Posting descriptions come from ATS APIs as HTML, often entity-escaped
+# ("&lt;li&gt;"), so tags have to be unescaped then stripped before matching.
+_TAG_RE = re.compile(r"<[^>]+>")
+
+
+def clean_description(description: str) -> str:
+    text = _TAG_RE.sub(" ", html.unescape(html.unescape(description or "")))
+    return re.sub(r"\s+", " ", text)
+
+
+def find_stack_mismatch(text: str) -> str | None:
+    """Label of the first non-transferable primary language that appears at
+    least once OUTSIDE an alternatives list with one of the resume's own
+    languages, or None."""
+    for label, pattern in STACK_MISMATCH_SIGNALS:
+        for m in re.finditer(pattern, text, re.IGNORECASE):
+            window = text[max(0, m.start() - ALTERNATIVES_WINDOW): m.end() + ALTERNATIVES_WINDOW]
+            if not RESUME_LANGUAGE_RE.search(window):
+                return label
+    return None
 
 # "staff" alone means over-leveled (Staff Engineer), but "Member of Technical
 # Staff" -- a normal IC title at a lot of AI/research orgs, not a seniority
 # signal -- also contains the substring "staff". The negative lookbehind
 # keeps "Staff Engineer"/"Senior Staff" flagged while leaving MTS titles alone.
 SENIORITY_PATTERNS = [
-    ("over", r"principal|founding|tech(nical)?\s+lead|(?<!technical )staff"),
+    ("over", r"principal|founding|tech(nical)?\s+lead|\blead\b|(?<!technical )staff"),
     ("senior", r"senior|\bsr\.?\b"),
-    ("junior", r"junior|\bjr\.?\b|entry.?level|new grad|intern"),
+    ("junior", r"junior|\bjr\.?\b|entry.?level|new grad"),
 ]
 
 DOMAIN_BONUS_RE = re.compile(r"biotech|therapeutics|biosciences|genomics|life sciences|pharmaceutical", re.IGNORECASE)
@@ -174,7 +222,7 @@ def classify_seniority(title: str) -> str:
 
 
 def score_posting(title: str, description: str) -> tuple[int, str]:
-    text = f"{title}\n{description}"
+    text = f"{title}\n{clean_description(description)}"
 
     matched, gaps = [], []
     for category, patterns in CATEGORY_KEYWORDS.items():
@@ -183,24 +231,16 @@ def score_posting(title: str, description: str) -> tuple[int, str]:
         else:
             gaps.append(category)
 
-    mismatch = None
-    for label, pattern in STACK_MISMATCH_SIGNALS:
-        if re.search(pattern, text, re.IGNORECASE):
-            mismatch = label
-            break
+    mismatch = find_stack_mismatch(text)
 
     seniority = classify_seniority(title)
     domain_bonus = bool(DOMAIN_BONUS_RE.search(text))
 
-    score = 20 + 8 * len(matched)
+    score = BASE_SCORE + sum(CATEGORY_POINTS[c] for c in matched)
     if mismatch:
         score -= 15
     if seniority == "over":
         score -= 25
-    elif seniority == "senior":
-        score -= 10
-    elif seniority == "junior":
-        score -= 8
     if domain_bonus:
         score += 5
     score = max(0, min(100, score))
@@ -214,9 +254,9 @@ def score_posting(title: str, description: str) -> tuple[int, str]:
     if seniority == "over":
         notes_parts.append("over-leveled (Staff/Principal/Founding/Tech Lead-type role vs ~4-5 YOE)")
     elif seniority == "senior":
-        notes_parts.append("slightly senior-leaning but plausible stretch fit")
+        notes_parts.append("senior-leaning, included (no seniority penalty)")
     elif seniority == "junior":
-        notes_parts.append("likely overqualified (junior/entry-level role)")
+        notes_parts.append("junior/entry-level, included (no seniority penalty)")
     else:
         notes_parts.append("good seniority match (mid-level IC)")
     if domain_bonus:
@@ -225,29 +265,71 @@ def score_posting(title: str, description: str) -> tuple[int, str]:
     return score, "; ".join(notes_parts)
 
 
-def main():
-    loc_q = build_bay_area_loc_q()
-    swe_filter = build_swe_title_q()
-    # Same "technical staff" carve-out as SENIORITY_PATTERNS: don't let a
-    # Member of Technical Staff title get excluded just because "staff" is
-    # a substring of it. Senior is deliberately not excluded here -- classify_seniority
-    # below still scores it as a softer "senior-leaning stretch fit" penalty rather
-    # than a hard cut, since Senior roles are allowed through now.
-    exclude_filter = Q(title__iregex=r"(?<!technical )staff")
-    cutoff = datetime.now(timezone.utc) - timedelta(days=90)
+# Stage-1 gate: postings at/above this keyword score (and not over-leveled)
+# go on to the paid Stage-2 calibrated scorer. 55 lets through any posting
+# that names one of the resume's languages plus some web stack, even with a
+# -15 non-transferable-language hit, while dropping e.g. pure Go/Rust shops.
+STAGE1_PASS_THRESHOLD = 55
+# A description this short is a scrape/render failure, not a real JD -- let
+# Stage 2 (or a human) look rather than rejecting on missing keywords.
+MIN_DESCRIPTION_CHARS = 300
 
-    qs = (
-        Posting.objects.filter(swe_filter, loc_q, posted_at__gte=cutoff)
+
+def stage1_gate(title: str, description: str, score: int | None = None) -> tuple[bool, str]:
+    """(passes, reason) for the free Stage-1 gatekeeper. Title/location/
+    disqualifier filtering happens in the query (build_stage1_queryset);
+    this is the per-posting content check."""
+    if score is None:
+        score, _ = score_posting(title, description)
+    if classify_seniority(title) == "over":
+        return False, "over-leveled title"
+    if len(clean_description(description)) < MIN_DESCRIPTION_CHARS:
+        return True, "description too short to keyword-score; needs a Stage-2 read"
+    if score < STAGE1_PASS_THRESHOLD:
+        return False, f"keyword score {score} < {STAGE1_PASS_THRESHOLD}"
+    return True, f"keyword score {score} >= {STAGE1_PASS_THRESHOLD}"
+
+
+def build_remote_us_q() -> Q:
+    """US-remote postings: a bare "Remote" / "Remote - US" location string,
+    or the platform's own remote flag on a posting whose normalized location
+    is in the US. Global/EU-only remote is left out."""
+    return (
+        Q(location__iregex=r"^\s*remote\s*$")
+        | Q(location__iregex=r"remote.{0,20}\b(us|usa|u\.s\.|united states)\b")
+        | Q(location__iregex=r"\b(us|usa|united states)\b.{0,5}remote")
+        | (Q(workplace_type__iexact="remote") & Q(locations__region="us"))
+    )
+
+
+def build_stage1_queryset(days: int = 90):
+    """Recent SWE-titled postings in the Bay Area or remote-US, minus
+    Staff-level and adjacent-discipline titles. Shared with
+    `manage.py score_postings` so Stage 2 only sees what Stage 1 sees."""
+    cutoff = datetime.now(timezone.utc) - timedelta(days=days)
+    # "technical staff" carve-out: see SENIORITY_PATTERNS. Senior is not
+    # excluded here; it's scored without penalty.
+    exclude_filter = Q(title__iregex=r"(?<!technical )staff")
+    return (
+        Posting.objects.filter(build_swe_title_q(), build_bay_area_loc_q() | build_remote_us_q(),
+                               posted_at__gte=cutoff)
         .exclude(exclude_filter)
         .exclude(title__iregex=DISQUALIFY_RE.pattern)
         .select_related("company")
         .distinct()
     )
+
+
+def main():
+    qs = build_stage1_queryset()
     print(f"scoring {qs.count()} postings...")
 
     rows = []
     for p in qs:
+        if is_hardware_flavored_role(p.title, p.description):
+            continue
         score, notes = score_posting(p.title, p.description)
+        passed, reason = stage1_gate(p.title, p.description, score)
         rows.append({
             "company": p.company.name or p.company.slug,
             "title": p.title,
@@ -257,22 +339,30 @@ def main():
             "workplace_type": p.workplace_type,
             "posted_at": p.posted_at.date().isoformat() if p.posted_at else "",
             "ats_fit_score": score,
+            "stage1_pass": "yes" if passed else "no",
+            "stage1_reason": reason,
+            "recruiter_fit_score": p.recruiter_fit_score if p.recruiter_fit_score is not None else "",
+            "desirability_score": p.desirability_score if p.desirability_score is not None else "",
             "ats_notes": notes,
-            "url": p.url,
+            "url": p.public_url,
         })
 
-    rows.sort(key=lambda r: r["ats_fit_score"], reverse=True)
+    rows.sort(key=lambda r: (r["stage1_pass"] == "yes", r["ats_fit_score"]), reverse=True)
 
     fieldnames = ["company", "title", "location", "avg_comp", "lowest_comp",
-                  "workplace_type", "posted_at", "ats_fit_score", "ats_notes", "url"]
+                  "workplace_type", "posted_at", "ats_fit_score", "stage1_pass", "stage1_reason",
+                  "recruiter_fit_score", "desirability_score", "ats_notes", "url"]
     with open(OUT_PATH, "w", newline="", encoding="utf-8") as f:
         writer = csv.DictWriter(f, fieldnames=fieldnames)
         writer.writeheader()
         writer.writerows(rows)
 
+    n_pass = sum(r["stage1_pass"] == "yes" for r in rows)
     print(f"wrote {len(rows)} rows to {os.path.abspath(OUT_PATH)}")
-    print(f"score distribution: min={rows[-1]['ats_fit_score']}, max={rows[0]['ats_fit_score']}, "
-          f"avg={sum(r['ats_fit_score'] for r in rows) / len(rows):.1f}")
+    print(f"stage 1: {n_pass} pass / {len(rows) - n_pass} gated out")
+    if rows:
+        scores = [r["ats_fit_score"] for r in rows]
+        print(f"score distribution: min={min(scores)}, max={max(scores)}, avg={sum(scores) / len(scores):.1f}")
 
 
 if __name__ == "__main__":

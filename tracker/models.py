@@ -322,6 +322,16 @@ class Posting(models.Model):
     # until scored; nothing recomputes these automatically.
     ats_score = models.PositiveSmallIntegerField(null=True, blank=True, default=None)
     recruiter_fit_score = models.PositiveSmallIntegerField(null=True, blank=True, default=None)
+    # Stage-2 (resume_scorer.py) only: how appealing the role is -- comp,
+    # scope, product, career direction -- scored separately so it never
+    # pulls recruiter_fit_score ("can I get an interview?") off its bands.
+    desirability_score = models.PositiveSmallIntegerField(null=True, blank=True, default=None)
+    # Which scorer wrote the fields above, e.g. "stage2-v1:claude-sonnet-4-6".
+    # Null for scores from earlier manual /score-job sessions, which use a
+    # different rubric and aren't directly comparable. Nullable (not blank-string)
+    # so SQLite adds it with a plain ALTER TABLE ADD COLUMN instead of rebuilding
+    # the whole multi-GB posting table.
+    fit_scorer_version = models.CharField(max_length=64, null=True, blank=True, default=None)
     # Full prompt output (stack/keyword table, requirements walk, real gaps,
     # bottom line) -- the two scores above are just the headline numbers.
     fit_notes = models.TextField(blank=True, default="")

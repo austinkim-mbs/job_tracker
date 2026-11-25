@@ -1,22 +1,167 @@
 [
   {
-    "company": "Office Hours",
-    "title": "Software Engineer, Full Stack",
-    "location": "San Francisco, NYC",
+    "company": "Indigo Health",
+    "title": "Fullstack Engineer",
+    "location": "Atlanta, GA",
     "human_score": 70,
     "human_seniority_fit": "strong",
-    "human_matched_skills": ["React", "TypeScript", "Docker", "AWS", "REST APIs", "CI/CD", "full-stack ownership"],
-    "human_missing_skills": ["Node.js in production", "MongoDB", "Postgres", "OpenSearch", "Temporal", "Next.js", "Tailwind/shadcn", "Kubernetes"],
-    "human_notes": "Strong full-stack generalist match and seniority fit (3+ YOE ask vs ~4.75 YOE candidate); main gap is backend language -- candidate's hands-on backend is Python/Django, role's is Node.js/TypeScript."
+    "human_matched_skills": [
+      "React",
+      "TypeScript",
+      "Docker",
+      "AWS",
+      "REST APIs",
+      "CI/CD",
+      "full-stack ownership"
+    ],
+    "human_missing_skills": [
+      "Node.js in production",
+      "MongoDB",
+      "Postgres",
+      "OpenSearch",
+      "Temporal",
+      "Next.js",
+      "Tailwind/shadcn",
+      "Kubernetes"
+    ],
+    "human_notes": "Strong full-stack generalist match and seniority fit (3+ YOE ask vs ~4.75 YOE candidate); main gap is backend language -- candidate's hands-on backend is Python/Django, role's is Node.js/TypeScript.",
+    "band": "borderline",
+    "label_source": "hand-labeled (original golden set)",
+    "posting_id": "8e1b8f6d1a5ffd0a6d963eaf00310a91316dad69b5e3cb41476dfcc38ba5f126"
   },
   {
-    "company": "Hilberts",
-    "title": "Software Engineer (Full-Stack / Product)",
-    "location": "San Francisco",
+    "company": "Maple Finance",
+    "title": "Fullstack Engineer",
+    "location": "Phoenix, AZ",
     "human_score": 57,
     "human_seniority_fit": "moderate",
-    "human_matched_skills": ["React", "TypeScript", "systems/architecture thinking", "internal tooling for monitoring ML systems"],
-    "human_missing_skills": ["Node.js/Express", "MongoDB", "Kubernetes", "Nx/monorepo", "LLM/agentic UX", "enterprise auth (SAML/OAuth)", "ClickHouse", "SOC2"],
-    "human_notes": "Nice parallel between candidate's observability-dashboard work and this role's 'Mission Control for ML teams' ask, but the role leans harder into AI-agent UX and systems-architect ownership than the resume shows."
+    "human_matched_skills": [
+      "React",
+      "TypeScript",
+      "systems/architecture thinking",
+      "internal tooling for monitoring ML systems"
+    ],
+    "human_missing_skills": [
+      "Node.js/Express",
+      "MongoDB",
+      "Kubernetes",
+      "Nx/monorepo",
+      "LLM/agentic UX",
+      "enterprise auth (SAML/OAuth)",
+      "ClickHouse",
+      "SOC2"
+    ],
+    "human_notes": "Nice parallel between candidate's observability-dashboard work and this role's 'Mission Control for ML teams' ask, but the role leans harder into AI-agent UX and systems-architect ownership than the resume shows.",
+    "band": "borderline",
+    "label_source": "hand-labeled (original golden set)",
+    "posting_id": "31e4962d4a1eeef9f61370b8d85f1f38f5b59077626d1fc1d10263e81a8036e9"
+  },
+  {
+    "company": "Zephyr Robotics",
+    "title": "Software Engineer",
+    "location": "Atlanta, GA",
+    "band": "must_pass",
+    "label_source": "user-stated Must Pass (2026-11-24); no exact score, band-only",
+    "posting_id": "c021975160dd22dd7f94b343bf6603c4c665241e7649750e98cf31532da1f593"
+  },
+  {
+    "company": "Garnet Cloud",
+    "title": "Fullstack Engineer",
+    "location": "Seattle, WA",
+    "band": "must_pass",
+    "human_score": 78,
+    "label_source": "earlier /score-job session (ats_score_prompt.md bands)",
+    "human_notes": "TypeScript hits directly on the frontend; Python and Go are both explicitly accepted backend languages ('language agnostic'). 3+ years fits comfortably. Fully remote -- no relocation. Clean match with no real dominant gap.",
+    "posting_id": "1e744ed51f9012b4280330d84776ed54e2d7d9b4e9cd815afb60f7f6629d78c5"
+  },
+  {
+    "company": "Harbor Bio",
+    "title": "Fullstack Engineer",
+    "location": "Denver, CO",
+    "band": "must_pass",
+    "human_score": 78,
+    "label_source": "earlier /score-job session (ats_score_prompt.md bands)",
+    "human_notes": "React, TypeScript, and Python all hit directly; Postgres hits. ClickHouse, GCP, and Kubernetes are unaddressed but framed as 'familiarity' wants, not hard requirements. No numeric YOE stated. Clean match with no dominant gap -- internal tooling for research/ops teams maps well onto resume's full-stack background. SF, no relocation.",
+    "posting_id": "02c2c56c7189e549a7b7ff83cca58fe51d42d18b7b8148d05cd30b260b6357d9"
+  },
+  {
+    "company": "Dune Software",
+    "title": "Software Engineer",
+    "location": "Minneapolis, MN",
+    "band": "borderline",
+    "human_score": 60,
+    "label_source": "earlier /score-job session (ats_score_prompt.md bands)",
+    "human_notes": "Strong stack match: TypeScript/JavaScript, React.js, Node.js, and SQL/NoSQL all hit directly; AWS/cloud-serverless hits. Healthcare (MSK care) domain is adjacent to the biotech background. 2+ yrs required, resume clears comfortably. Bachelor's degree stated plainly with no escape clause -- knockout-risk given no resume Education section. React Native is preferred but not required, a minor miss. [F",
+    "posting_id": "4b0b4854e61da352eb8aa55441af0e51079baa28a224ef4029e7bc78f43586f8"
+  },
+  {
+    "company": "Cinder Software",
+    "title": "Fullstack Engineer",
+    "location": "Remote (US)",
+    "band": "borderline",
+    "human_score": 68,
+    "label_source": "earlier /score-job session (ats_score_prompt.md bands)",
+    "human_notes": "Excellent, clean match: React/Vue for web and Python for backend APIs both hit directly (Kotlin also accepted but Python satisfies it); React Native for mobile is unaddressed on resume but the web track alone covers the stated requirements. Only 1.5+ years required -- comfortably within resume's ~4.75 YOE. Degree required 'or equivalent practical experience' -- has an escape clause. Fully remote (",
+    "posting_id": "f97983a9cf89704ba6dccf3483fe09b55c1d4218f626070c6e1ef6ee8994f3a6"
+  },
+  {
+    "company": "Indigo Systems",
+    "title": "Software Engineer",
+    "location": "Raleigh, NC",
+    "band": "borderline",
+    "human_score": 65,
+    "label_source": "earlier /score-job session (ats_score_prompt.md bands)",
+    "human_notes": "JavaScript/TypeScript and React both hit directly and explicitly required. GCP is analogous to resume's AWS experience. 3+ years fits resume's level well. Bay Area office option (Tue-Thu) or fully remote -- flexible, no forced relocation. Legal-tech domain is unfamiliar but explicitly a nice-to-have, not required. Solid general full-stack match. [Fit rescaled to absolute terms in a later recalibra",
+    "posting_id": "fc950c610419b6137af5d215b908fa411c2e8f8c0690dd806f8fd62eaabe67f7"
+  },
+  {
+    "company": "Basalt AI",
+    "title": "Software Engineer",
+    "location": "Remote (US)",
+    "band": "hard_reject",
+    "human_score": 20,
+    "label_source": "earlier /score-job session (ats_score_prompt.md bands)",
+    "human_notes": "Python hits directly. Real, dominant gap: this role explicitly requires 5-15+ years with substantial infrastructure/platform-engineering focus plus a deep, 'AI-pilled' cultural and technical fluency across the AI stack that goes well beyond personal productivity-tool usage. SF or NYC.",
+    "posting_id": "bcb9a74924064e8dee662b5c8e62d624f9cffe646eda110b6f6bba71cab0bdf4"
+  },
+  {
+    "company": "Willow Cloud",
+    "title": "Software Engineer",
+    "location": "Phoenix, AZ",
+    "band": "hard_reject",
+    "human_score": 24,
+    "label_source": "earlier /score-job session (ats_score_prompt.md bands)",
+    "human_notes": "Stays weak across every method -- old score wasn't wrong here. This is a specialized front-end/SSR architecture role (\"sole UI authority,\" deep Next.js/SSR expertise, 5+ years production FRONT-END specifically), not a generalist full-stack role. Resume's frontend work is one piece of a broader full-stack/backend-leaning background, not a dedicated front-end specialization. No Next.js/SSR evidence.",
+    "posting_id": "c146d684a66059b8b8114c4fa4ce26836f004e61d4f453caa606cd3baefe5f06"
+  },
+  {
+    "company": "Zephyr Studio",
+    "title": "Software Engineer",
+    "location": "Boston, MA",
+    "band": "hard_reject",
+    "human_score": 35,
+    "label_source": "earlier /score-job session (ats_score_prompt.md bands)",
+    "human_notes": "React and TypeScript hit directly and explicitly required. Real, dominant gap: 7 years of front-end experience required (real stretch beyond ~4.75) functioning as a hidden-seniority bar despite no 'Senior' in the title. 'Fluency with AI coding tools (Copilot, Cursor, Claude Code)' is satisfied directly by resume's demonstrated Claude Code usage, and prior AI/ML product-surface experience is explic",
+    "posting_id": "088679db56edb1585ba91e0f0c432a5022d17461a23bdc5ef60d486dbfc2cfa8"
+  },
+  {
+    "company": "Fable Finance",
+    "title": "Software Engineer",
+    "location": "Pittsburgh, PA",
+    "band": "hard_reject",
+    "human_score": 30,
+    "label_source": "earlier /score-job session (ats_score_prompt.md bands)",
+    "human_notes": "Python hits directly; Jupyter Notebook hits (an exact resume skill); Terraform, GCP, TypeScript, and Postgres are all nice-to-haves that also hit. But the JD body explicitly states 'As a Senior Software Engineer' despite the posted title omitting 'Senior' -- a real, explicit seniority mismatch, the dominant issue here. San Mateo, 3 days/week in-office for Bay Area employees -- fine for an SF-ba",
+    "posting_id": "665bc41e95c081db4695853d60c337913814a1aa3204bc04bad4b1ba32ecaa93"
+  },
+  {
+    "company": "Vale Analytics",
+    "title": "Software Engineer",
+    "location": "Austin, TX",
+    "band": "hard_reject",
+    "human_score": 35,
+    "label_source": "earlier /score-job session (ats_score_prompt.md bands)",
+    "human_notes": "Same template and same core-function agent-building gap as Vale Analytics's TMT posting -- the job is shipping production AI agents as the primary function, not a supporting skill. SF office only, no relocation needed.",
+    "posting_id": "5f9a5a5fecbc367d8f69d4a6beea7689d386d405d136477c3c6a9b9619c50dc7"
   }
 ]

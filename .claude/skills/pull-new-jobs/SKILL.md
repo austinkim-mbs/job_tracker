@@ -97,7 +97,9 @@ by `ats_fit_score`. Mention the output path so the user can open the full
 CSV themselves.
 
 Do not try to interpret "preferred" as requiring `ANTHROPIC_API_KEY` — this
-whole path is Claude-free. The Claude-based ATS scoring
-(`resume_scorer.py`) only runs inside `poll_applications.py`'s
-Gmail-polling loop, for applications that have actually replied —
-different pipeline, not part of this skill.
+whole path is Claude-free. This script is the Stage-1 gatekeeper
+(`stage1_pass` column). Stage 2 — the calibrated Claude scorer in
+`resume_scorer.py` — runs separately and costs API calls:
+`python manage.py score_postings --limit N` scores Stage-1-passing postings
+and saves ats/fit/desirability/role_type/fit_notes onto `Posting`. Don't run
+it from this skill unless the user asks.

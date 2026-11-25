@@ -12,3 +12,15 @@ swe_market_dashboard.html
 crawler_state.json
 
 /notes/*
+# review queue holds real Gmail subjects/senders (poll_applications.py)
+logs/needs_review.jsonl
+logs/dry_run_candidates.jsonl
+# scheduled_pull_new_jobs.ps1 run logs
+logs/pull_new_jobs_*.log
+# scorer eval outputs (regenerate with manage.py eval_resume_scorer --output ...)
+eval_report*.json
+# personal resume copies -- RESUME_PATH in .env points at these
+resume_*.txt
+Resume_*.pdf*
+# golden-set pseudonym -> real company/title/location mapping (local only)
+interview_funnel/eval/*.local.json
